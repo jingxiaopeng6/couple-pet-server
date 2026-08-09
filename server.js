@@ -182,6 +182,24 @@ io.on('connection', (socket) => {
     }
   });
 
+  // --- 转发"完整画作"图片（JPEG dataURL）---
+  socket.on('draw-canvas-image', (data) => {
+    if (!checkRateLimit(socket.id)) return;
+    if (!data || typeof data.dataUrl !== 'string' || !data.dataUrl.startsWith('data:image/')) {
+      socket.emit('room-error', { message: '画作格式异常' });
+      return;
+    }
+    // 限制大小：画布 300x300 JPEG 约 20~80KB，这里给 256KB 上限，防止刷流量
+    if (data.dataUrl.length > 256 * 1024) {
+      socket.emit('room-error', { message: '画作过大，请稍后再试' });
+      return;
+    }
+    const room = socketRooms.get(socket.id);
+    if (room) {
+      socket.to(room).emit('draw-canvas-image', data);
+    }
+  });
+
   // --- 断开连接 ---
   socket.on('disconnect', () => {
     const room = socketRooms.get(socket.id);
