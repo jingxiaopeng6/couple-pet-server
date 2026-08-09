@@ -1,0 +1,30 @@
+# 客户端 Electron 工程（含 node_modules、打包产物），服务端镜像不需要
+client/
+release/
+release-v3/
+release-v4/
+dist/
+dist-build/
+build-output/
+*.zip
+
+# 版本控制与开发工具
+.git/
+.gitignore
+.trae/
+
+# 文档
+*.md
+
+# 本地依赖与日志（容器内重新 npm install）
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# 环境变量与密钥
+.env
+.env.*
+
+# Docker 自身文件
+Dockerfile
+.dockerignore

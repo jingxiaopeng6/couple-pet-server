@@ -1,1 +1,30 @@
-﻿node_modules/
+# 依赖
+node_modules/
+client/node_modules/
+
+# Electron 打包产物（每次构建几百MB，绝不要进仓库）
+client/build-output/
+client/dist/
+client/dist-build/
+client/release/
+client/release-v3/
+client/release-v4/
+
+# 临时部署包
+deploy-server.zip
+
+# 开发工具临时文件
+.trae/
+
+# 日志
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# 环境变量与密钥
+.env
+.env.*
+
+# 系统文件
+.DS_Store
+Thumbs.db
