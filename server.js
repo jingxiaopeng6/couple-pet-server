@@ -47,7 +47,7 @@ function cleanupRateLimiter(socketId) {
 }
 
 // ==================== 输入校验 ====================
-const VALID_ACTIONS = ['开心', '比心', '比耶', '奔跑', '喝奶茶', '跌倒', '坠落'];
+const VALID_ACTIONS = ['开心', '比心', '比耶', '奔跑', '喝奶茶', '跌倒', '坠落', '左边探头', '右边探头'];
 const MAX_NOTE_LENGTH = 200;
 const MAX_STROKE_POINTS = 2000;
 
@@ -161,6 +161,46 @@ io.on('connection', (socket) => {
       const payload = { text: data.text, ts: Date.now(), by: socket.id };
       io.to(room).emit('receive-note', payload);
       if (typeof ack === 'function') ack({ ok: true });
+    }
+  });
+
+  // --- 转发实时应用状态（功能一：陪伴状态） ---
+  socket.on('update-status', (data) => {
+    const room = socketRooms.get(socket.id);
+    if (room && data && typeof data.text === 'string' && data.text.length <= 50) {
+      socket.to(room).emit('peer-status-update', { text: data.text, ts: Date.now() });
+    }
+  });
+
+  // --- 转发实时位置同步（功能二：归一化坐标） ---
+  socket.on('sync-move', (data) => {
+    const room = socketRooms.get(socket.id);
+    if (room && data && typeof data.x === 'number' && typeof data.y === 'number'
+        && data.x >= 0 && data.x <= 1 && data.y >= 0 && data.y <= 1) {
+      socket.to(room).emit('sync-move', { x: data.x, y: data.y, ts: Date.now() });
+    }
+  });
+
+  // --- 转发双方开关状态同步（对方静音/位置同步状态） ---
+  socket.on('toggle-state-sync', (data) => {
+    const room = socketRooms.get(socket.id);
+    if (room && data && typeof data === 'object') {
+      socket.to(room).emit('partner-toggle-update', {
+        mute: !!data.mute,
+        syncMove: !!data.syncMove,
+        ts: Date.now()
+      });
+    }
+  });
+
+  // --- 转发即时语音（功能三：对讲机，不落地存储） ---
+  socket.on('send-instant-voice', (data) => {
+    if (!checkRateLimit(socket.id)) return;
+    const room = socketRooms.get(socket.id);
+    if (room && data && typeof data.audio === 'string' && data.audio.startsWith('data:audio/')) {
+      // 限制 256KB，防止刷流量
+      if (data.audio.length > 256 * 1024) return;
+      socket.to(room).emit('play-instant-voice', { audio: data.audio, ts: Date.now() });
     }
   });
 
