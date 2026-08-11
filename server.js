@@ -181,6 +181,14 @@ io.on('connection', (socket) => {
     }
   });
 
+  // --- 转发 WAD 走路方向同步（对方操控桌宠走路时同步动画） ---
+  socket.on('wad-direction', (data) => {
+    const room = socketRooms.get(socket.id);
+    if (room && data && (data.direction === null || typeof data.direction === 'string')) {
+      socket.to(room).emit('wad-direction', { direction: data.direction, ts: Date.now() });
+    }
+  });
+
   // --- 转发双方开关状态同步（对方静音/位置同步状态） ---
   socket.on('toggle-state-sync', (data) => {
     const room = socketRooms.get(socket.id);
