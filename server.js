@@ -173,11 +173,18 @@ io.on('connection', (socket) => {
   });
 
   // --- 转发实时位置同步（功能二：归一化坐标） ---
+  // 注意：WAD 走路时窗口可以部分移出屏幕（窗口顶部在 wa.y - 440），yRatio 可能 < 0 或 > 1
+  // 所以这里不做 [0,1] 范围检查，由接收方主进程 apply-sync-move 做像素级 clamp
   socket.on('sync-move', (data) => {
     const room = socketRooms.get(socket.id);
     if (room && data && typeof data.x === 'number' && typeof data.y === 'number'
-        && data.x >= 0 && data.x <= 1 && data.y >= 0 && data.y <= 1) {
-      socket.to(room).emit('sync-move', { x: data.x, y: data.y, ts: Date.now() });
+        && Number.isFinite(data.x) && Number.isFinite(data.y)) {
+      // 诊断日志：确认服务器收到并转发（上下走时 y 可能为负数或 > 1）
+      console.log(`[sync-move] room=${room} from=${socket.id.slice(0,4)} x=${data.x.toFixed(3)} y=${data.y.toFixed(3)} fromField=${data.from}`);
+      // 保留 from 字段：接收方据此决定 WAD 立即应用 / 拖拽插值
+      socket.to(room).emit('sync-move', { x: data.x, y: data.y, from: data.from, ts: Date.now() });
+    } else {
+      console.log(`[sync-move REJECTED] room=${room} data=`, data);
     }
   });
 
