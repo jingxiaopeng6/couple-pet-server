@@ -47,7 +47,7 @@ function cleanupRateLimiter(socketId) {
 }
 
 // ==================== 输入校验 ====================
-const VALID_ACTIONS = ['开心', '比心', '比耶', '奔跑', '喝奶茶', '跌倒', '坠落', '左边探头', '右边探头'];
+const VALID_ACTIONS = ['开心', '比心', '比耶', '奔跑', '喝奶茶', '跌倒', '坠落', '左边探头', '右边探头', '眨眼', '伤心哭泣', '吃饭', '听音乐', '愤怒', '放烟花', '气球', '看书', '破涕为笑', '背身生气'];
 const MAX_NOTE_LENGTH = 200;
 const MAX_STROKE_POINTS = 2000;
 
@@ -219,6 +219,21 @@ io.on('connection', (socket) => {
     const room = socketRooms.get(socket.id);
     if (room) {
       socket.to(room).emit('draw-stroke', data);
+    }
+  });
+
+  // --- 转发双人专注模式（番茄钟） ---
+  // data.action: 'start' | 'exit'
+  // data.duration: 分钟数（start 时必填，1~180）
+  socket.on('focus-sync', (data) => {
+    const room = socketRooms.get(socket.id);
+    if (!room || !data || typeof data.action !== 'string') return;
+    if (data.action === 'start') {
+      const dur = Number(data.duration);
+      if (!Number.isFinite(dur) || dur < 1 || dur > 180) return;
+      socket.to(room).emit('focus-sync', { action: 'start', duration: dur, ts: Date.now() });
+    } else if (data.action === 'exit') {
+      socket.to(room).emit('focus-sync', { action: 'exit', ts: Date.now() });
     }
   });
 
